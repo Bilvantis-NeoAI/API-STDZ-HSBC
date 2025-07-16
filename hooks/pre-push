@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Pre-push hook for comprehensive API validation with interactive UI
+# This hook runs before pushing to remote repository
+
+set -e
+
+# Get the directory where this script is located
+HOOK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_ROOT="$(dirname "$HOOK_DIR")"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}Running comprehensive API validation before push...${NC}"
+
+# Check if Python is available
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}Error: Python3 is not installed or not in PATH${NC}"
+    exit 1
+fi
+
+# Check if validation module exists
+if [ ! -f "$PROJECT_ROOT/validation/api_validator.py" ]; then
+    echo -e "${RED}Error: API validation module not found${NC}"
+    exit 1
+fi
+
+# Read from stdin
+while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        # Branch is being deleted, nothing to validate
+        continue
+    fi
+    
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        # New branch, validate all commits
+        range="$local_sha"
+    else
+        # Existing branch, validate new commits
+        range="$remote_sha..$local_sha"
+    fi
+    
+    # Get list of changed files in the push
+    CHANGED_FILES=$(git diff --name-only "$range")
+    
+    if [ -n "$CHANGED_FILES" ]; then
+        echo -e "${YELLOW}Validating changes in range: $range${NC}"
+        
+        # Run comprehensive validation with interactive mode
+        cd "$PROJECT_ROOT"
+        python3 -m validation.api_validator --commit-range="$range" --interactive
+        
+        VALIDATION_EXIT_CODE=$?
+        
+        if [ $VALIDATION_EXIT_CODE -ne 0 ]; then
+            echo -e "${RED}✗ Validation failed or was cancelled${NC}"
+            echo -e "${YELLOW}Push aborted.${NC}"
+            exit 1
+        else
+            echo -e "${GREEN}✓ Validation passed or proceeded with justification${NC}"
+        fi
+    else
+        echo -e "${YELLOW}No file changes detected in push range${NC}"
+    fi
+done
+
+echo -e "${GREEN}✓ Pre-push validation completed successfully${NC}"
+exit 0 

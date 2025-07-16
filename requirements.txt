@@ -1,0 +1,3 @@
+PyYAML>=6.0
+# Note: tkinter is included with most Python installations
+# If tkinter is not available, the system will fall back to console mode 
