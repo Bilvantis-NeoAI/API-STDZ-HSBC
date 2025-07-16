@@ -337,7 +337,8 @@ class APIValidator:
     
     def _filter_files_by_type(self, file_paths: List[str]) -> List[str]:
         """Filter files based on extensions and patterns from config."""
-        extensions = self.config.get('file_types', {}).get('extensions', ['.py', '.yaml', '.yml', '.json'])
+        # Default to Python and JSON files if no config specified
+        extensions = self.config.get('file_types', {}).get('extensions', ['.py', '.json'])
         ignore_patterns = self.config.get('file_types', {}).get('ignore_patterns', [])
         
         filtered_files = []

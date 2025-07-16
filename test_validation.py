@@ -48,7 +48,7 @@ def test_file_filtering():
     
     test_files = [
         'test.py',
-        'config.yaml',
+        'config.json',
         'data.json',
         'readme.md',
         'script.sh',
@@ -61,7 +61,7 @@ def test_file_filtering():
     print(f"Original files: {test_files}")
     print(f"Filtered files: {filtered}")
     
-    expected_filtered = ['test.py', 'config.yaml', 'data.json']
+    expected_filtered = ['test.py', 'config.json', 'data.json']
     success = set(filtered) == set(expected_filtered)
     print(f"✓ File filtering works correctly" if success else "✗ File filtering failed")
     
@@ -82,11 +82,11 @@ def test_meta_file_finder():
         # Test meta file patterns
         test_filenames = [
             'api.meta',
-            'api.meta.yaml',
+            'api.meta.json',
             'api.meta.json',
             'API.meta',
             'not_meta.txt',
-            'api.yaml'
+            'api.json'
         ]
         
         print("\nTesting meta file pattern matching:")

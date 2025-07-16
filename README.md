@@ -175,7 +175,7 @@ cd ~/.apigenie && python3 demo_interactive.py
 ### Manual Validation
 ```bash
 # Validate specific files
-python3 -m validation.api_validator --files file1.py file2.yaml
+python3 -m validation.api_validator --files file1.py file2.json
 
 # Validate staged files
 python3 -m validation.api_validator --staged-files
@@ -229,7 +229,7 @@ The system automatically finds `api.meta` files throughout the repository and us
 **Discovery features:**
 - Recursive search through all directories
 - Smart directory skipping (ignores `.git`, `node_modules`, etc.)
-- Multiple format parsing (JSON, YAML, properties)
+- Multiple format parsing (JSON, YAML, properties) - uses built-in parsers
 - Closest meta file matching for validation
 
 ## Configuration

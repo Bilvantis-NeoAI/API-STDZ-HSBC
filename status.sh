@@ -101,13 +101,8 @@ if command_exists python3; then
     python_version=$(python3 --version 2>&1 | cut -d' ' -f2)
     echo -e "   ${GREEN}✅ Python 3 ($python_version)${NC}"
     
-    # Check PyYAML
-    if python3 -c "import yaml" 2>/dev/null; then
-        echo -e "   ${GREEN}✅ PyYAML${NC}"
-    else
-        echo -e "   ${YELLOW}⚠️  PyYAML not installed${NC}"
-        echo -e "      ${YELLOW}Run: python3 -m pip install PyYAML --user${NC}"
-    fi
+    # All dependencies are built into Python standard library
+    echo -e "   ${GREEN}✅ All dependencies available (standard library only)${NC}"
     
     # Check tkinter
     if python3 -c "import tkinter" 2>/dev/null; then

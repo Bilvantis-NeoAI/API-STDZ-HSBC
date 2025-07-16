@@ -41,14 +41,7 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Check for required Python packages
-REQUIRED_PACKAGES="yaml"
-for package in $REQUIRED_PACKAGES; do
-    if ! python3 -c "import $package" 2>/dev/null; then
-        echo -e "${YELLOW}Installing required Python package: $package${NC}"
-        python3 -m pip install PyYAML
-    fi
-done
+# All functionality uses Python standard library only - no external packages needed
 
 # Test the API identifier
 echo -e "${YELLOW}Testing API type identification...${NC}"

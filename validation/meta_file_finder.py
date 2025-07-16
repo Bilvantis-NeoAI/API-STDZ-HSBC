@@ -7,7 +7,7 @@ throughout the repository structure.
 
 import os
 import json
-import yaml
+import re
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
@@ -132,11 +132,11 @@ class MetaFileFinder:
             except json.JSONDecodeError as e:
                 print(f"Failed to parse {file_path} as JSON: {e}")
         
-        # Try YAML
+        # Try YAML with simple built-in parser
         if file_path.endswith(('.yaml', '.yml')) or self._looks_like_yaml(content):
             try:
-                return yaml.safe_load(content)
-            except yaml.YAMLError as e:
+                return self._parse_simple_yaml(content)
+            except Exception as e:
                 print(f"Failed to parse {file_path} as YAML: {e}")
         
         # Try as properties file or key-value pairs
@@ -166,6 +166,81 @@ class MetaFileFinder:
                 break
         return False
     
+    def _parse_simple_yaml(self, content: str) -> Dict[str, Any]:
+        """
+        Parse simple YAML content without external dependencies.
+        
+        This is a basic parser that handles simple key-value pairs and nested objects.
+        It's designed for basic API meta files, not complex YAML structures.
+        """
+        result = {}
+        lines = content.split('\n')
+        current_dict = result
+        dict_stack = []
+        
+        for line in lines:
+            # Skip empty lines and comments
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                continue
+            
+            # Calculate indentation level
+            indent = len(line) - len(line.lstrip())
+            
+            # Handle nested structure based on indentation
+            while len(dict_stack) > 0 and indent <= dict_stack[-1][1]:
+                dict_stack.pop()
+            
+            current_dict = dict_stack[-1][0] if dict_stack else result
+            
+            # Parse key-value pairs
+            if ':' in stripped:
+                key, value = stripped.split(':', 1)
+                key = key.strip().strip('"\'')
+                value = value.strip()
+                
+                # Handle different value types
+                if not value:
+                    # Empty value, might be a nested object
+                    nested_dict = {}
+                    current_dict[key] = nested_dict
+                    dict_stack.append((nested_dict, indent))
+                else:
+                    current_dict[key] = self._parse_yaml_value(value)
+        
+        return result
+    
+    def _parse_yaml_value(self, value: str) -> Any:
+        """Parse a YAML value string into appropriate Python type."""
+        value = value.strip()
+        
+        # Remove quotes if present
+        if (value.startswith('"') and value.endswith('"')) or \
+           (value.startswith("'") and value.endswith("'")):
+            return value[1:-1]
+        
+        # Handle boolean values
+        if value.lower() in ('true', 'yes', 'on'):
+            return True
+        elif value.lower() in ('false', 'no', 'off'):
+            return False
+        
+        # Handle null values
+        if value.lower() in ('null', 'none', '~'):
+            return None
+        
+        # Try to parse as number
+        try:
+            if '.' in value:
+                return float(value)
+            else:
+                return int(value)
+        except ValueError:
+            pass
+        
+        # Return as string
+        return value
+
     def _parse_properties(self, content: str) -> Dict[str, Any]:
         """
         Parse content as properties/key-value pairs.

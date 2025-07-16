@@ -36,6 +36,9 @@ backup_existing_hooks() {
     if [ ! -z "$current_hooks_path" ]; then
         echo -e "${YELLOW}⚠️  Found existing global hooks path: $current_hooks_path${NC}"
         echo -e "${YELLOW}   This will be backed up to: $APIGENIE_DIR/backup_hooks_path.txt${NC}"
+        
+        # Create the directory if it doesn't exist
+        mkdir -p "$APIGENIE_DIR"
         echo "$current_hooks_path" > "$APIGENIE_DIR/backup_hooks_path.txt"
     fi
 }
@@ -185,15 +188,7 @@ check_dependencies() {
         exit 1
     fi
     
-    # Check Python dependencies
-    echo -e "${BLUE}📦 Installing Python dependencies...${NC}"
-    if python3 -c "import yaml" 2>/dev/null; then
-        echo -e "${GREEN}✅ PyYAML already installed${NC}"
-    else
-        echo -e "${YELLOW}📦 Installing PyYAML...${NC}"
-        python3 -m pip install PyYAML --user
-    fi
-    
+    # All functionality uses Python standard library only
     echo -e "${GREEN}✅ Dependencies checked${NC}"
 }
 
