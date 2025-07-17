@@ -335,7 +335,8 @@ class MetaValidator(BaseValidator):
         # GBGF can be in API.contract.GBGF or contractOwner.GBGF
         gbgf_contract = self._get_nested_value(data, 'API.contract.GBGF')
         gbgf_owner = self._get_nested_value(data, 'contractOwner.GBGF')
-        gbgf = gbgf_contract or gbgf_owner
+        gbgf_api_contract = self._get_nested_value(data, 'API.contractOwner.GBGF')
+        gbgf = gbgf_contract or gbgf_owner or gbgf_api_contract
         
         if gbgf is None:
             self.add_error("GBGF field is missing (should be in API.contract.GBGF or contractOwner.GBGF)", file_path)

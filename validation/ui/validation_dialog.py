@@ -65,13 +65,13 @@ class ValidationDialog:
         title_label = ttk.Label(
             main_frame, 
             text="🚨 API Validation Failures Detected", 
-            font=("Arial", 16, "bold")
+            font=("Arial", 20, "bold")
         )
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 10), sticky=tk.W)
         
         # Summary
         summary_text = self._create_summary_text()
-        summary_label = ttk.Label(main_frame, text=summary_text, font=("Arial", 10))
+        summary_label = ttk.Label(main_frame, text=summary_text, font=("Arial", 12))
         summary_label.grid(row=1, column=0, columnspan=2, pady=(0, 10), sticky=tk.W)
         
         # Validation results frame
@@ -86,7 +86,7 @@ class ValidationDialog:
             wrap=tk.WORD, 
             width=80, 
             height=20,
-            font=("Consolas", 9)
+            font=("Consolas", 11)
         )
         self.results_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
@@ -171,15 +171,7 @@ class ValidationDialog:
                                               subsequent_indent="   ")
                 self.results_text.insert(tk.END, wrapped_warning + "\n\n")
         
-        # Add compliance rules reference
-        self.results_text.insert(tk.END, "\n" + "📋 COMPLIANCE RULES REFERENCE:\n")
-        self.results_text.insert(tk.END, "=" * 50 + "\n")
-        self.results_text.insert(tk.END, 
-            "• All api.meta files must comply with 20 standardized rules\n"
-            "• Fields must have correct values and formats\n"
-            "• Missing required fields will cause validation failures\n"
-            "• Run 'python3 -m validation.api_validator --compliance-only' for details\n"
-        )
+        # Removed compliance rules reference section
         
         # Make text read-only
         self.results_text.config(state=tk.DISABLED)
@@ -241,7 +233,7 @@ class JustificationDialog:
         title_label = ttk.Label(
             main_frame, 
             text="⚠️ Justification Required", 
-            font=("Arial", 14, "bold")
+            font=("Arial", 16, "bold")
         )
         title_label.pack(pady=(0, 10))
         
@@ -250,7 +242,7 @@ class JustificationDialog:
             "Please provide a justification for proceeding with validation failures.\n"
             "This message will be added to your commit message for audit purposes."
         )
-        instruction_label = ttk.Label(main_frame, text=instruction, wraplength=550)
+        instruction_label = ttk.Label(main_frame, text=instruction, wraplength=550, font=("Arial", 11))
         instruction_label.pack(pady=(0, 15))
         
         # Text area frame
@@ -263,7 +255,7 @@ class JustificationDialog:
             wrap=tk.WORD, 
             width=70, 
             height=10,
-            font=("Arial", 10)
+            font=("Arial", 12)
         )
         self.justification_text.pack(fill=tk.BOTH, expand=True)
         self.justification_text.focus()
