@@ -128,7 +128,8 @@ class APIValidator:
         self.warnings.extend(self.meta_validator.get_warnings())
         
         # Handle validation results based on mode
-        if not validation_passed and mode == 'push' and interactive:
+        has_errors = len(self.errors) > 0
+        if (not validation_passed or has_errors) and mode == 'push' and interactive:
             return self._handle_interactive_validation_failure()
         else:
             # Print results for non-interactive modes
@@ -214,9 +215,15 @@ class APIValidator:
     def _validate_meta_files(self) -> bool:
         """Validate all found api.meta files against compliance rules."""
         if not self.meta_files:
-            self.add_warning("No api.meta files found in repository", "repository")
-            print("⚠️  No api.meta files found - compliance validation skipped")
-            return True
+            # For PCF and SHP/IKP repositories, api.meta files are required
+            if self.api_type in ['PCF', 'SHP', 'IKP', 'SHP/IKP']:
+                self.add_error("No api.meta files found in repository - api.meta files are required for PCF and SHP/IKP projects", "repository")
+                print("❌ No api.meta files found - this is required for PCF and SHP/IKP projects")
+                return False
+            else:
+                self.add_warning("No api.meta files found in repository", "repository")
+                print("⚠️  No api.meta files found - compliance validation skipped")
+                return True
         
         print(f"\n🔍 Validating {len(self.meta_files)} api.meta file(s) against compliance rules...")
         

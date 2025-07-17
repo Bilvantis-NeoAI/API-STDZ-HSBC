@@ -30,8 +30,12 @@ class APIIdentifier:
         """
         Identify API type based on the rules:
         
+        General: No SHP/IKP folders AND doesn't contain "-decision-service-" (no validation)
+        PCF: Contains "-decision-service-" (validate)
+        SHP/IKP: Has SHP/IKP folders OR contains "-ds-" (validate)
+        
         Returns:
-            "PCF", "SHP", "IKP", or "UNKNOWN"
+            "General", "PCF", "SHP", "IKP", "SHP/IKP", or "UNKNOWN"
         """
         # Check for SHP/IKP folders on root
         shp_folder_exists = self._check_folder_exists("SHP")
@@ -47,7 +51,7 @@ class APIIdentifier:
         print(f"Contains '-decision-service-': {is_decision_service}")
         print(f"Contains '-ds-': {is_ds_repo}")
         
-        # Apply identification rules
+        # Apply identification rules (order matters)
         if shp_folder_exists:
             return "SHP"
         elif ikp_folder_exists:
@@ -58,9 +62,9 @@ class APIIdentifier:
             return "SHP/IKP"
         elif is_decision_service:
             return "PCF"
-        elif not shp_folder_exists and not ikp_folder_exists:
-            # No SHP/IKP folders found, likely PCF
-            return "PCF"
+        elif not shp_folder_exists and not ikp_folder_exists and not is_decision_service:
+            # No SHP/IKP folders and no decision service pattern = General repository
+            return "General"
         else:
             return "UNKNOWN"
     
