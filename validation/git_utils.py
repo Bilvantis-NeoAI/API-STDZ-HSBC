@@ -14,36 +14,39 @@ from typing import List, Optional
 class GitUtils:
     """Utilities for git operations."""
     
-    @staticmethod
-    def get_last_commit_message() -> str:
+    def __init__(self, repo_path: Optional[str] = None):
+        """Initialize with optional repository path."""
+        self.repo_path = repo_path or os.getcwd()
+    
+    def get_last_commit_message(self) -> str:
         """Get the message of the last commit."""
         try:
             result = subprocess.run(
                 ['git', 'log', '-1', '--pretty=format:%B'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
             raise Exception(f"Failed to get last commit message: {e}")
     
-    @staticmethod
-    def get_last_commit_hash() -> str:
+    def get_last_commit_hash(self) -> str:
         """Get the hash of the last commit."""
         try:
             result = subprocess.run(
                 ['git', 'rev-parse', 'HEAD'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
             raise Exception(f"Failed to get last commit hash: {e}")
     
-    @staticmethod
-    def amend_commit_message(new_message: str) -> bool:
+    def amend_commit_message(self, new_message: str) -> bool:
         """
         Amend the last commit with a new message.
         
@@ -78,8 +81,8 @@ class GitUtils:
             print(f"Failed to amend commit message: {e}")
             return False
     
-    @staticmethod
     def create_validation_failure_appendix(
+        self,
         justification: str, 
         errors: List[str], 
         warnings: List[str]
@@ -133,8 +136,8 @@ class GitUtils:
         
         return "\n".join(appendix_parts)
     
-    @staticmethod
     def append_to_commit_message(
+        self,
         justification: str,
         errors: List[str],
         warnings: List[str]
@@ -152,10 +155,10 @@ class GitUtils:
         """
         try:
             # Get current commit message
-            current_message = GitUtils.get_last_commit_message()
+            current_message = self.get_last_commit_message()
             
             # Create appendix
-            appendix = GitUtils.create_validation_failure_appendix(
+            appendix = self.create_validation_failure_appendix(
                 justification, errors, warnings
             )
             
@@ -163,48 +166,48 @@ class GitUtils:
             new_message = current_message + appendix
             
             # Amend the commit
-            return GitUtils.amend_commit_message(new_message)
+            return self.amend_commit_message(new_message)
             
         except Exception as e:
             print(f"Failed to append to commit message: {e}")
             return False
     
-    @staticmethod
-    def is_git_repository() -> bool:
+    def is_git_repository(self) -> bool:
         """Check if current directory is a git repository."""
         try:
             subprocess.run(
                 ['git', 'rev-parse', '--git-dir'],
                 capture_output=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return True
         except subprocess.CalledProcessError:
             return False
     
-    @staticmethod
-    def get_current_branch() -> Optional[str]:
+    def get_current_branch(self) -> Optional[str]:
         """Get the name of the current git branch."""
         try:
             result = subprocess.run(
                 ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return result.stdout.strip()
         except subprocess.CalledProcessError:
             return None
     
-    @staticmethod
-    def has_uncommitted_changes() -> bool:
+    def has_uncommitted_changes(self) -> bool:
         """Check if there are uncommitted changes."""
         try:
             result = subprocess.run(
                 ['git', 'status', '--porcelain'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return bool(result.stdout.strip())
         except subprocess.CalledProcessError:

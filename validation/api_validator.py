@@ -31,14 +31,15 @@ from .git_utils import GitUtils
 class APIValidator:
     """Main validator class that orchestrates all API validation rules."""
     
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, repo_path: Optional[str] = None):
         """Initialize the validator with configuration."""
+        self.repo_path = repo_path or os.getcwd()
         self.config_loader = ConfigLoader(config_path)
         self.config = self.config_loader.load_config()
-        self.api_identifier = APIIdentifier()
-        self.meta_finder = MetaFileFinder()
+        self.api_identifier = APIIdentifier(self.repo_path)
+        self.meta_finder = MetaFileFinder(self.repo_path)
         self.meta_validator = MetaValidator(self.config)
-        self.git_utils = GitUtils()
+        self.git_utils = GitUtils(self.repo_path)
         self.errors = []
         self.warnings = []
         
@@ -316,7 +317,8 @@ class APIValidator:
                 ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACM'],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return [f.strip() for f in result.stdout.split('\n') if f.strip()]
         except subprocess.CalledProcessError:
@@ -329,7 +331,8 @@ class APIValidator:
                 ['git', 'diff', '--name-only', commit_range],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                cwd=self.repo_path
             )
             return [f.strip() for f in result.stdout.split('\n') if f.strip()]
         except subprocess.CalledProcessError:
@@ -420,11 +423,13 @@ def main():
                        help='Only run compliance validation on api.meta files')
     parser.add_argument('--interactive', action='store_true',
                        help='Enable interactive mode for validation failures (used by pre-push hook)')
+    parser.add_argument('--repo-path', type=str,
+                       help='Path to the repository to validate (defaults to current directory)')
     
     args = parser.parse_args()
     
     # Initialize validator
-    validator = APIValidator(args.config)
+    validator = APIValidator(args.config, args.repo_path)
     
     # If only identification is requested
     if args.identify_only:

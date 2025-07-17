@@ -7,7 +7,8 @@ set -e
 
 # Get the directory where this script is located
 HOOK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$(dirname "$HOOK_DIR")"
+APIGENIE_ROOT="$(dirname "$HOOK_DIR")"
+REPO_ROOT="$(pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -25,7 +26,7 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Check if validation module exists
-if [ ! -f "$PROJECT_ROOT/validation/api_validator.py" ]; then
+if [ ! -f "$APIGENIE_ROOT/validation/api_validator.py" ]; then
     echo -e "${RED}Error: API validation module not found${NC}"
     exit 1
 fi
@@ -52,8 +53,8 @@ while read local_ref local_sha remote_ref remote_sha; do
         echo -e "${YELLOW}Validating changes in range: $range${NC}"
         
         # Run comprehensive validation with interactive mode
-        cd "$PROJECT_ROOT"
-        python3 -m validation.api_validator --commit-range="$range" --interactive
+        cd "$APIGENIE_ROOT"
+        python3 -m validation.api_validator --commit-range="$range" --interactive --repo-path "$REPO_ROOT"
         
         VALIDATION_EXIT_CODE=$?
         
