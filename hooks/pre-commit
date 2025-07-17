@@ -15,10 +15,19 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Dynamic Python detection
+if command -v python3 &> /dev/null; then
+    PYTHON=python3
+elif command -v python &> /dev/null; then
+    PYTHON=python
+else
+    PYTHON=""
+fi
+
 # Quick check if this is an API project that needs validation
-if [ -f "$APIGENIE_ROOT/validation/api_validator.py" ] && command -v python3 &> /dev/null; then
+if [ -f "$APIGENIE_ROOT/validation/api_validator.py" ] && [ -n "$PYTHON" ]; then
     cd "$APIGENIE_ROOT"
-    API_TYPE=$(python3 -m validation.api_validator --identify-only --repo-path "$REPO_ROOT" 2>/dev/null | grep "API Type:" | cut -d' ' -f3)
+    API_TYPE=$($PYTHON -m validation.api_validator --identify-only --repo-path "$REPO_ROOT" 2>/dev/null | grep "API Type:" | cut -d' ' -f3)
     
     if [ "$API_TYPE" = "PCF" ] || [ "$API_TYPE" = "SHP" ] || [ "$API_TYPE" = "IKP" ] || [ "$API_TYPE" = "SHP/IKP" ]; then
         echo -e "${BLUE}📋 API Genie: This is a $API_TYPE project${NC}"

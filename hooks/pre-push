@@ -19,9 +19,13 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}Running comprehensive API validation before push...${NC}"
 
-# Check if Python is available
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Error: Python3 is not installed or not in PATH${NC}"
+# Dynamic Python detection
+if command -v python3 &> /dev/null; then
+    PYTHON=python3
+elif command -v python &> /dev/null; then
+    PYTHON=python
+else
+    echo -e "${RED}Error: Python is not installed or not in PATH${NC}"
     exit 1
 fi
 
@@ -54,7 +58,7 @@ while read local_ref local_sha remote_ref remote_sha; do
         
         # Run comprehensive validation with interactive mode
         cd "$APIGENIE_ROOT"
-        python3 -m validation.api_validator --commit-range="$range" --interactive --repo-path "$REPO_ROOT"
+        $PYTHON -m validation.api_validator --commit-range="$range" --interactive --repo-path "$REPO_ROOT"
         
         VALIDATION_EXIT_CODE=$?
         
@@ -68,6 +72,7 @@ while read local_ref local_sha remote_ref remote_sha; do
     else
         echo -e "${YELLOW}No file changes detected in push range${NC}"
     fi
+
 done
 
 echo -e "${GREEN}✓ Pre-push validation completed successfully${NC}"
