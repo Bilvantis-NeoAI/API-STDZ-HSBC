@@ -12,6 +12,10 @@ This project provides git hooks for validating code against API rules. The hooks
 
 ## Interactive Validation Workflow
 
+### Developer-Friendly Approach
+- **Commits**: Always allowed with friendly reminders for API projects
+- **Push**: Full validation with interactive UI for handling failures
+
 When pushing code with validation failures, the system provides an interactive experience:
 
 ### 1. **Validation Dialog** 🔍
