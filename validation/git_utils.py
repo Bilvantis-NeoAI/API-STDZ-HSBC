@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import os
 from typing import List, Optional
+from datetime import datetime
 
 
 class GitUtils:
@@ -56,6 +57,11 @@ class GitUtils:
         Returns:
             True if successful, False otherwise
         """
+        # First check if we can amend (no uncommitted changes, etc.)
+        if not self._can_amend_commit():
+            print("Cannot amend commit (may have uncommitted changes or other git state issues)")
+            return self._create_validation_override_commit(new_message)
+        
         try:
             # Create a temporary file with the new message
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
@@ -67,7 +73,8 @@ class GitUtils:
                 subprocess.run(
                     ['git', 'commit', '--amend', '-F', temp_file],
                     check=True,
-                    capture_output=True
+                    capture_output=True,
+                    cwd=self.repo_path
                 )
                 return True
             finally:
@@ -79,6 +86,86 @@ class GitUtils:
                     
         except subprocess.CalledProcessError as e:
             print(f"Failed to amend commit message: {e}")
+            print("Attempting to create validation override commit instead...")
+            return self._create_validation_override_commit(new_message)
+    
+    def _can_amend_commit(self) -> bool:
+        """Check if the current git state allows amending the last commit."""
+        try:
+            # Check if there are uncommitted changes
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=self.repo_path
+            )
+            
+            # If there are uncommitted changes, we can't amend safely
+            if result.stdout.strip():
+                return False
+            
+            # Check if there are any commits to amend
+            subprocess.run(
+                ['git', 'rev-parse', 'HEAD'],
+                capture_output=True,
+                check=True,
+                cwd=self.repo_path
+            )
+            
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
+    def _create_validation_override_commit(self, message: str) -> bool:
+        """Create a separate commit with validation override information."""
+        try:
+            # Create a validation override file
+            override_file = ".validation_override"
+            with open(os.path.join(self.repo_path, override_file), 'w') as f:
+                f.write(f"Validation Override Record\n")
+                f.write(f"========================\n\n")
+                f.write(message)
+            
+            # Add and commit the override file
+            subprocess.run(
+                ['git', 'add', override_file],
+                check=True,
+                capture_output=True,
+                cwd=self.repo_path
+            )
+            
+            subprocess.run(
+                ['git', 'commit', '-m', 'API Validation Override Record\n\n' + message],
+                check=True,
+                capture_output=True,
+                cwd=self.repo_path
+            )
+            
+            print(f"✅ Created validation override commit with details in {override_file}")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to create validation override commit: {e}")
+            # As last resort, just log the information
+            return self._log_validation_override(message)
+    
+    def _log_validation_override(self, message: str) -> bool:
+        """Log validation override information to a file as last resort."""
+        try:
+            log_file = os.path.join(self.repo_path, ".api_validation_overrides.log")
+            with open(log_file, 'a') as f:
+                timestamp = datetime.now().isoformat()
+                f.write(f"\n{'='*60}\n")
+                f.write(f"Validation Override: {timestamp}\n")
+                f.write(f"{'='*60}\n")
+                f.write(message)
+                f.write(f"\n{'='*60}\n\n")
+            
+            print(f"⚠️ Logged validation override to {log_file}")
+            return True
+        except Exception as e:
+            print(f"Failed to log validation override: {e}")
             return False
     
     def create_validation_failure_appendix(

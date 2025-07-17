@@ -208,7 +208,7 @@ class MetaValidator(BaseValidator):
         return True
     
     def _validate_api_layer(self, data: Dict[str, Any], file_path: str) -> bool:
-        """Rule 7: API.layer should be one of allowed values"""
+        """Rule 7: API.layer should be one of allowed values (case-sensitive)"""
         layer = self._get_nested_value(data, 'API.layer')
         
         if layer is None:
@@ -222,7 +222,7 @@ class MetaValidator(BaseValidator):
         return True
     
     def _validate_api_audience(self, data: Dict[str, Any], file_path: str) -> bool:
-        """Rule 8: API.audience should be one of allowed values"""
+        """Rule 8: API.audience should be one of allowed values (case-sensitive)"""
         audience = self._get_nested_value(data, 'API.audience')
         
         if audience is None:
@@ -333,14 +333,19 @@ class MetaValidator(BaseValidator):
     def _validate_gbgf(self, data: Dict[str, Any], file_path: str) -> bool:
         """Rule 16: GBGF should be one of allowed values (check multiple locations)"""
         # GBGF can be in API.contract.GBGF or contractOwner.GBGF
-        gbgf = self._get_nested_value(data, 'API.contract.GBGF') or self._get_nested_value(data, 'contractOwner.GBGF')
+        gbgf_contract = self._get_nested_value(data, 'API.contract.GBGF')
+        gbgf_owner = self._get_nested_value(data, 'contractOwner.GBGF')
+        gbgf = gbgf_contract or gbgf_owner
         
         if gbgf is None:
-            self.add_error("GBGF is missing (should be in API.contract.GBGF or contractOwner.GBGF)", file_path)
+            self.add_error("GBGF field is missing (should be in API.contract.GBGF or contractOwner.GBGF)", file_path)
             return False
         
+        # Provide location info in the error message
+        location = "API.contract.GBGF" if gbgf_contract else "contractOwner.GBGF"
+        
         if gbgf not in self.ALLOWED_VALUES['API.contract.GBGF']:
-            self.add_error(f"GBGF '{gbgf}' is not in allowed values {self.ALLOWED_VALUES['API.contract.GBGF']}", file_path)
+            self.add_error(f"GBGF value '{gbgf}' in {location} is not in allowed values {self.ALLOWED_VALUES['API.contract.GBGF']}", file_path)
             return False
         
         return True
