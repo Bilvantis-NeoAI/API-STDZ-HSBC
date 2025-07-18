@@ -21,6 +21,13 @@ import os
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows
+if sys.platform.startswith('win') and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 from .config_loader import ConfigLoader
 from .api_identifier import APIIdentifier
 from .meta_file_finder import MetaFileFinder
