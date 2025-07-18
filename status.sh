@@ -27,6 +27,22 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to detect Python command
+detect_python() {
+    if command_exists python3; then
+        echo "python3"
+    elif command_exists python; then
+        # Check if it's Python 3
+        if python --version 2>&1 | grep -q "Python 3"; then
+            echo "python"
+        else
+            echo ""
+        fi
+    else
+        echo ""
+    fi
+}
+
 # Check if API Genie is installed
 if [ ! -d "$APIGENIE_DIR" ]; then
     echo -e "${RED}❌ API Genie is NOT installed${NC}"
@@ -97,15 +113,16 @@ echo ""
 
 # Check dependencies
 echo -e "${BLUE}🔍 Dependencies:${NC}"
-if command_exists python3; then
-    python_version=$(python3 --version 2>&1 | cut -d' ' -f2)
-    echo -e "   ${GREEN}✅ Python 3 ($python_version)${NC}"
+python_cmd=$(detect_python)
+if [ -n "$python_cmd" ]; then
+    python_version=$("$python_cmd" --version 2>&1 | cut -d' ' -f2)
+    echo -e "   ${GREEN}✅ $python_cmd ($python_version)${NC}"
     
     # All dependencies are built into Python standard library
     echo -e "   ${GREEN}✅ All dependencies available (standard library only)${NC}"
     
     # Check tkinter
-    if python3 -c "import tkinter" 2>/dev/null; then
+    if "$python_cmd" -c "import tkinter" 2>/dev/null; then
         echo -e "   ${GREEN}✅ tkinter (GUI support)${NC}"
     else
         echo -e "   ${YELLOW}⚠️  tkinter not available (will use console mode)${NC}"
@@ -125,7 +142,7 @@ echo ""
 # Test functionality
 echo -e "${BLUE}🧪 Testing Functionality:${NC}"
 cd "$APIGENIE_DIR"
-if python3 -m validation.api_validator --identify-only > /dev/null 2>&1; then
+if "$python_cmd" -m validation.api_validator --identify-only > /dev/null 2>&1; then
     echo -e "   ${GREEN}✅ API validator working${NC}"
 else
     echo -e "   ${YELLOW}⚠️  API validator test completed${NC}"
@@ -133,7 +150,7 @@ fi
 
 # Show management commands
 echo -e "${CYAN}🛠️  Management Commands:${NC}"
-echo -e "   • Test UI:        ${YELLOW}cd ~/.apigenie && python3 demo_interactive.py${NC}"
+echo -e "   • Test UI:        ${YELLOW}cd ~/.apigenie && $python_cmd demo_interactive.py${NC}"
 echo -e "   • Check logs:     ${YELLOW}cat ~/.apigenie/version.txt${NC}"
 echo -e "   • Uninstall:      ${YELLOW}./uninstall.sh${NC} or ${YELLOW}~/.apigenie/uninstall.sh${NC}"
 echo -e "   • Reinstall:      ${YELLOW}./install.sh${NC}"
@@ -143,8 +160,8 @@ echo ""
 if git rev-parse --git-dir > /dev/null 2>&1; then
     echo -e "${CYAN}📍 Current Repository Status:${NC}"
     cd - > /dev/null  # Go back to original directory
-    repo_type=$(cd "$APIGENIE_DIR" && python3 -m validation.api_validator --identify-only 2>/dev/null | grep "API Type:" | cut -d' ' -f3 || echo "Unknown")
-    should_validate=$(cd "$APIGENIE_DIR" && python3 -m validation.api_validator --identify-only 2>/dev/null | grep "Should validate:" | cut -d' ' -f3 || echo "Unknown")
+    repo_type=$(cd "$APIGENIE_DIR" && "$python_cmd" -m validation.api_validator --identify-only 2>/dev/null | grep "API Type:" | cut -d' ' -f3 || echo "Unknown")
+    should_validate=$(cd "$APIGENIE_DIR" && "$python_cmd" -m validation.api_validator --identify-only 2>/dev/null | grep "Should validate:" | cut -d' ' -f3 || echo "Unknown")
     
     echo -e "   ${BLUE}Repository Type:${NC} $repo_type"
     echo -e "   ${BLUE}Will be validated:${NC} $should_validate"

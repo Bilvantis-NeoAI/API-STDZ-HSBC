@@ -30,6 +30,22 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to detect Python command
+detect_python() {
+    if command_exists python3; then
+        echo "python3"
+    elif command_exists python; then
+        # Check if it's Python 3
+        if python --version 2>&1 | grep -q "Python 3"; then
+            echo "python"
+        else
+            echo ""
+        fi
+    else
+        echo ""
+    fi
+}
+
 # Function to backup existing global hooks path
 backup_existing_hooks() {
     local current_hooks_path=$(git config --global --get core.hooksPath 2>/dev/null || echo "")
@@ -176,9 +192,11 @@ update_hook_paths() {
 check_dependencies() {
     echo -e "${BLUE}🔍 Checking dependencies...${NC}"
     
-    # Check Python 3
-    if ! command_exists python3; then
+    # Detect Python command
+    PYTHON_CMD=$(detect_python)
+    if [ -z "$PYTHON_CMD" ]; then
         echo -e "${RED}❌ Python 3 is required but not installed${NC}"
+        echo -e "${YELLOW}   Please install Python 3 (python3 or python command)${NC}"
         exit 1
     fi
     
@@ -188,7 +206,7 @@ check_dependencies() {
         exit 1
     fi
     
-    # All functionality uses Python standard library only
+    echo -e "${GREEN}✅ Python detected: $PYTHON_CMD${NC}"
     echo -e "${GREEN}✅ Dependencies checked${NC}"
 }
 
@@ -208,16 +226,16 @@ test_installation() {
     
     # Test API validator
     cd "$APIGENIE_DIR"
-    if python3 -m validation.api_validator --identify-only > /dev/null 2>&1; then
+    if $PYTHON_CMD -m validation.api_validator --identify-only > /dev/null 2>&1; then
         echo -e "${GREEN}✅ API validator is working${NC}"
     else
         echo -e "${YELLOW}⚠️  API validator test completed (this is normal for non-API repositories)${NC}"
     fi
     
     # Test demo (if in interactive environment)
-    if [ -t 0 ] && [ -t 1 ] && command_exists python3; then
+    if [ -t 0 ] && [ -t 1 ] && command_exists $PYTHON_CMD; then
         echo -e "${BLUE}🎯 Installation complete! You can test the UI with:${NC}"
-        echo -e "   ${CYAN}cd ~/.apigenie && python3 demo_interactive.py${NC}"
+        echo -e "   ${CYAN}cd ~/.apigenie && $PYTHON_CMD demo_interactive.py${NC}"
     fi
 }
 
@@ -240,7 +258,7 @@ display_success() {
     echo -e "   • Push operations with failures will show interactive UI"
     echo ""
     echo -e "${CYAN}🛠️  Management Commands:${NC}"
-    echo -e "   • Test UI:        ${YELLOW}cd ~/.apigenie && python3 demo_interactive.py${NC}"
+    echo -e "   • Test UI:        ${YELLOW}cd ~/.apigenie && $PYTHON_CMD demo_interactive.py${NC}"
     echo -e "   • Check version:  ${YELLOW}cat ~/.apigenie/version.txt${NC}"
     echo -e "   • Uninstall:      ${YELLOW}~/.apigenie/uninstall.sh${NC}"
     echo ""
