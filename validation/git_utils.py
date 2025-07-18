@@ -122,7 +122,7 @@ class GitUtils:
         try:
             # Create a validation override file
             override_file = ".validation_override"
-            with open(os.path.join(self.repo_path, override_file), 'w') as f:
+            with open(os.path.join(self.repo_path, override_file), 'w', encoding='utf-8') as f:
                 f.write(f"Validation Override Record\n")
                 f.write(f"========================\n\n")
                 f.write(message)
@@ -154,7 +154,7 @@ class GitUtils:
         """Log validation override information to a file as last resort."""
         try:
             log_file = os.path.join(self.repo_path, ".api_validation_overrides.log")
-            with open(log_file, 'a') as f:
+            with open(log_file, 'a', encoding='utf-8') as f:
                 timestamp = datetime.now().isoformat()
                 f.write(f"\n{'='*60}\n")
                 f.write(f"Validation Override: {timestamp}\n")

@@ -24,7 +24,7 @@ sys.meta_path.insert(0, ImportBlocker())
 '''
 
 # Write the runtime hook
-with open('runtime_hook.py', 'w') as f:
+with open('runtime_hook.py', 'w', encoding='utf-8') as f:
     f.write(runtime_hook_content)
 
 spec_content = '''# -*- mode: python ; coding: utf-8 -*-
@@ -97,5 +97,5 @@ if sys.platform == 'darwin':
     )
 '''
 
-with open('genie-hsbc.spec', 'w') as f:
+with open('genie-hsbc.spec', 'w', encoding='utf-8') as f:
     f.write(spec_content) 

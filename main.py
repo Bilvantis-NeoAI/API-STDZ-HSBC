@@ -207,7 +207,7 @@ Icon={app_path}
 Type=Application
 Categories=Utility;Development;
 """
-                    desktop_file.write_text(content)
+                    desktop_file.write_text(content, encoding='utf-8')
                     os.chmod(desktop_file, 0o755)
                 except Exception as e:
                     logging.error(f"Error creating Linux desktop entry: {str(e)}")
