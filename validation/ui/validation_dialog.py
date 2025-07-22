@@ -14,17 +14,19 @@ import textwrap
 class ValidationDialog:
     """GUI dialog for handling validation failures during push."""
     
-    def __init__(self, validation_results: Dict[str, Any]):
+    def __init__(self, validation_results: Dict[str, Any], repo_path: str = None):
         """
         Initialize the validation dialog.
         
         Args:
             validation_results: Dictionary containing validation results with errors, warnings, etc.
+            repo_path: Path to the git repository root (for git info)
         """
         self.validation_results = validation_results
         self.result = None  # Will be 'proceed', 'cancel', or None
         self.justification = ""
         self.root = None
+        self.repo_path = repo_path
     
     def show_dialog(self) -> Tuple[str, str]:
         """
@@ -202,22 +204,31 @@ class ValidationDialog:
         # If no justification provided, stay in the dialog
 
     def _download_report(self):
-        """Open a file dialog to save the full validation report."""
+        """Open a file dialog to save the full validation report, always using correct repo and justification."""
         import tkinter.filedialog
         import subprocess
         from datetime import datetime
-        # Try to get git info
+        # Prompt for justification if not set
+        if not self.justification:
+            justification_dialog = JustificationDialog(self.root)
+            justification = justification_dialog.get_justification()
+            if not justification:
+                tk.messagebox.showwarning("Justification Required", "Please provide a justification to save the report.")
+                return
+            self.justification = justification
+        # Try to get git info from the correct repo
+        git_cwd = self.repo_path or None
         try:
-            commit_id = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+            commit_id = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True, cwd=git_cwd).stdout.strip()
         except Exception:
             commit_id = "(unknown)"
         try:
-            branch = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+            branch = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, check=True, cwd=git_cwd).stdout.strip()
         except Exception:
             branch = "(unknown)"
         try:
-            user_name = subprocess.run(['git', 'config', 'user.name'], capture_output=True, text=True, check=True).stdout.strip()
-            user_email = subprocess.run(['git', 'config', 'user.email'], capture_output=True, text=True, check=True).stdout.strip()
+            user_name = subprocess.run(['git', 'config', 'user.name'], capture_output=True, text=True, check=True, cwd=git_cwd).stdout.strip()
+            user_email = subprocess.run(['git', 'config', 'user.email'], capture_output=True, text=True, check=True, cwd=git_cwd).stdout.strip()
         except Exception:
             user_name = "(unknown)"
             user_email = "(unknown)"
@@ -233,7 +244,7 @@ class ValidationDialog:
         if not file_path:
             return  # User cancelled
         # Compose report
-        justification = getattr(self, 'justification', "(not provided)")
+        justification = self.justification or "(not provided)"
         errors = self.validation_results.get('errors', [])
         warnings = self.validation_results.get('warnings', [])
         with open(file_path, 'w', encoding='utf-8') as f:
