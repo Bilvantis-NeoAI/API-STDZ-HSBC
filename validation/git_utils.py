@@ -79,8 +79,17 @@ class GitUtils:
     def save_validation_details_local(self, justification: str, errors: List[str], warnings: List[str]):
         """
         Save the full validation details to a local file in the repo root (not committed).
+        Includes commit id, branch, and GitHub user.
         """
         commit_id = self.get_last_commit_hash()
+        branch = self.get_current_branch() or "(unknown)"
+        # Get GitHub user from git config
+        try:
+            user_name = subprocess.run(['git', 'config', 'user.name'], capture_output=True, text=True, check=True, cwd=self.repo_path).stdout.strip()
+            user_email = subprocess.run(['git', 'config', 'user.email'], capture_output=True, text=True, check=True, cwd=self.repo_path).stdout.strip()
+        except Exception:
+            user_name = "(unknown)"
+            user_email = "(unknown)"
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f".apigenie_validation_{commit_id}_{timestamp}.txt"
         file_path = os.path.join(self.repo_path, filename)
@@ -88,6 +97,8 @@ class GitUtils:
             f.write("Validation Override Record\n")
             f.write("========================\n\n")
             f.write(f"Commit: {commit_id}\n")
+            f.write(f"Branch: {branch}\n")
+            f.write(f"GitHub User: {user_name} <{user_email}>\n")
             f.write(f"Timestamp: {timestamp}\n\n")
             f.write(f"JUSTIFICATION: {justification}\n\n")
             if errors:
