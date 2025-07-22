@@ -243,7 +243,7 @@ test_installation() {
 display_success() {
     echo ""
     echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║                   INSTALLATION COMPLETE!                    ║${NC}"
+    echo -e "${GREEN}║                   INSTALLATION COMPLETE!                     ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${BLUE}🎉 API Genie has been successfully installed globally!${NC}"
