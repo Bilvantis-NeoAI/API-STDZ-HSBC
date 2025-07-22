@@ -116,9 +116,8 @@ class GitUtils:
         print(f"Full validation details saved locally to {file_path} (not committed)")
     
     def _can_amend_commit(self) -> bool:
-        """Check if the current git state allows amending the last commit."""
+        """Check if the current git state allows amending the last commit (ignores untracked files)."""
         try:
-            # Check if there are uncommitted changes
             result = subprocess.run(
                 ['git', 'status', '--porcelain'],
                 capture_output=True,
@@ -126,19 +125,16 @@ class GitUtils:
                 check=True,
                 cwd=self.repo_path
             )
-            
-            # If there are uncommitted changes, we can't amend safely
-            if result.stdout.strip():
+            # Ignore untracked files (lines starting with '??')
+            lines = [line for line in result.stdout.splitlines() if not line.startswith('??')]
+            if lines:
                 return False
-            
-            # Check if there are any commits to amend
             subprocess.run(
                 ['git', 'rev-parse', 'HEAD'],
                 capture_output=True,
                 check=True,
                 cwd=self.repo_path
             )
-            
             return True
         except subprocess.CalledProcessError:
             return False
