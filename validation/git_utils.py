@@ -50,26 +50,16 @@ class GitUtils:
     def amend_commit_message(self, new_message: str) -> bool:
         """
         Amend the last commit with a new message.
-        
-        Args:
-            new_message: The new commit message
-            
-        Returns:
-            True if successful, False otherwise
+        Returns True if successful, False otherwise.
         """
-        # First check if we can amend (no uncommitted changes, etc.)
         if not self._can_amend_commit():
-            print("Cannot amend commit (may have uncommitted changes or other git state issues)")
-            return self._create_validation_override_commit(new_message)
-        
+            print("Cannot amend commit (may have uncommitted changes or other git state issues). Please commit or stash your changes and try again.")
+            return False
         try:
-            # Create a temporary file with the new message
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
                 f.write(new_message)
                 temp_file = f.name
-            
             try:
-                # Amend the commit with the new message
                 subprocess.run(
                     ['git', 'commit', '--amend', '-F', temp_file],
                     check=True,
@@ -78,16 +68,40 @@ class GitUtils:
                 )
                 return True
             finally:
-                # Clean up temp file
                 try:
                     os.unlink(temp_file)
                 except OSError:
                     pass
-                    
         except subprocess.CalledProcessError as e:
             print(f"Failed to amend commit message: {e}")
-            print("Attempting to create validation override commit instead...")
-            return self._create_validation_override_commit(new_message)
+            return False
+
+    def save_validation_details_local(self, justification: str, errors: List[str], warnings: List[str]):
+        """
+        Save the full validation details to a local file in the repo root (not committed).
+        """
+        commit_id = self.get_last_commit_hash()
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f".apigenie_validation_{commit_id}_{timestamp}.txt"
+        file_path = os.path.join(self.repo_path, filename)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("Validation Override Record\n")
+            f.write("========================\n\n")
+            f.write(f"Commit: {commit_id}\n")
+            f.write(f"Timestamp: {timestamp}\n\n")
+            f.write(f"JUSTIFICATION: {justification}\n\n")
+            if errors:
+                f.write(f"VALIDATION ERRORS ({len(errors)}):\n")
+                for error in errors:
+                    f.write(f"  - {error}\n")
+                f.write("\n")
+            if warnings:
+                f.write(f"VALIDATION WARNINGS ({len(warnings)}):\n")
+                for warning in warnings:
+                    f.write(f"  - {warning}\n")
+                f.write("\n")
+            f.write("========================\n")
+        print(f"Full validation details saved locally to {file_path} (not committed)")
     
     def _can_amend_commit(self) -> bool:
         """Check if the current git state allows amending the last commit."""
@@ -117,57 +131,6 @@ class GitUtils:
         except subprocess.CalledProcessError:
             return False
     
-    def _create_validation_override_commit(self, message: str) -> bool:
-        """Create a separate commit with validation override information."""
-        try:
-            # Create a validation override file
-            override_file = ".validation_override"
-            with open(os.path.join(self.repo_path, override_file), 'w', encoding='utf-8') as f:
-                f.write(f"Validation Override Record\n")
-                f.write(f"========================\n\n")
-                f.write(message)
-            
-            # Add and commit the override file
-            subprocess.run(
-                ['git', 'add', override_file],
-                check=True,
-                capture_output=True,
-                cwd=self.repo_path
-            )
-            
-            subprocess.run(
-                ['git', 'commit', '-m', 'API Validation Override Record\n\n' + message],
-                check=True,
-                capture_output=True,
-                cwd=self.repo_path
-            )
-            
-            print(f"✅ Created validation override commit with details in {override_file}")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to create validation override commit: {e}")
-            # As last resort, just log the information
-            return self._log_validation_override(message)
-    
-    def _log_validation_override(self, message: str) -> bool:
-        """Log validation override information to a file as last resort."""
-        try:
-            log_file = os.path.join(self.repo_path, ".api_validation_overrides.log")
-            with open(log_file, 'a', encoding='utf-8') as f:
-                timestamp = datetime.now().isoformat()
-                f.write(f"\n{'='*60}\n")
-                f.write(f"Validation Override: {timestamp}\n")
-                f.write(f"{'='*60}\n")
-                f.write(message)
-                f.write(f"\n{'='*60}\n\n")
-            
-            print(f"⚠️ Logged validation override to {log_file}")
-            return True
-        except Exception as e:
-            print(f"Failed to log validation override: {e}")
-            return False
-    
     def create_validation_failure_appendix(
         self,
         justification: str, 
@@ -175,52 +138,22 @@ class GitUtils:
         warnings: List[str]
     ) -> str:
         """
-        Create an appendix for commit message with validation failure details.
-        
-        Args:
-            justification: User's justification for proceeding
-            errors: List of validation errors
-            warnings: List of validation warnings
-            
-        Returns:
-            Formatted appendix text
+        Create a summary appendix for the commit message with validation override info.
+        Only include counts, justification, and a reference to the local file.
         """
         appendix_parts = [
             "\n" + "="*50,
             "⚠️  VALIDATION OVERRIDE NOTICE",
-            "="*50
-        ]
-        
-        # Add justification
-        appendix_parts.extend([
+            "="*50,
             "",
-            "JUSTIFICATION:",
-            f"  {justification}",
-            ""
-        ])
-        
-        # Add validation failures
-        if errors:
-            appendix_parts.extend([
-                f"VALIDATION ERRORS ({len(errors)}):",
-                *[f"  • {error}" for error in errors],
-                ""
-            ])
-        
-        if warnings:
-            appendix_parts.extend([
-                f"VALIDATION WARNINGS ({len(warnings)}):",
-                *[f"  • {warning}" for warning in warnings],
-                ""
-            ])
-        
-        # Add metadata
-        appendix_parts.extend([
-            "This commit was pushed despite validation failures.",
+            f"JUSTIFICATION: {justification}",
+            f"Validation errors: {len(errors)}",
+            f"Validation warnings: {len(warnings)}",
+            "",
+            "Full validation details are saved locally in a file named .apigenie_validation_<commit_id>_<timestamp>.txt in the repo root (not committed).",
             "Review and address these issues in a follow-up commit.",
             "="*50
-        ])
-        
+        ]
         return "\n".join(appendix_parts)
     
     def append_to_commit_message(
@@ -231,30 +164,16 @@ class GitUtils:
     ) -> bool:
         """
         Append validation failure details to the last commit message.
-        
-        Args:
-            justification: User's justification
-            errors: List of validation errors
-            warnings: List of validation warnings
-            
-        Returns:
-            True if successful, False otherwise
+        Also save full details to a local file (not committed).
         """
         try:
-            # Get current commit message
             current_message = self.get_last_commit_message()
-            
-            # Create appendix
-            appendix = self.create_validation_failure_appendix(
-                justification, errors, warnings
-            )
-            
-            # Combine messages
+            appendix = self.create_validation_failure_appendix(justification, errors, warnings)
             new_message = current_message + appendix
-            
-            # Amend the commit
-            return self.amend_commit_message(new_message)
-            
+            success = self.amend_commit_message(new_message)
+            if success:
+                self.save_validation_details_local(justification, errors, warnings)
+            return success
         except Exception as e:
             print(f"Failed to append to commit message: {e}")
             return False
