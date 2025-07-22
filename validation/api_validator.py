@@ -159,7 +159,7 @@ class APIValidator:
         try:
             from .ui.validation_dialog import show_validation_dialog
             
-            result, justification = show_validation_dialog(validation_results)
+            result, justification = show_validation_dialog(validation_results, repo_path=self.repo_path)
             
             if result == 'proceed':
                 print("\n✅ User chose to proceed with validation failures")

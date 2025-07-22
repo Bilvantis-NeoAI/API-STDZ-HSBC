@@ -423,18 +423,19 @@ class JustificationDialog:
         self.dialog.destroy()
 
 
-def show_validation_dialog(validation_results: Dict[str, Any]) -> Tuple[str, str]:
+def show_validation_dialog(validation_results: Dict[str, Any], repo_path: str = None) -> Tuple[str, str]:
     """
     Show validation dialog and return user's choice.
     
     Args:
         validation_results: Dictionary containing validation results
+        repo_path: Path to the git repository root (for git info)
         
     Returns:
         Tuple of (result, justification) where result is 'proceed' or 'cancel'
     """
     try:
-        dialog = ValidationDialog(validation_results)
+        dialog = ValidationDialog(validation_results, repo_path=repo_path)
         return dialog.show_dialog()
     except Exception as e:
         # Fallback to console if GUI fails
