@@ -97,7 +97,16 @@ class ValidationDialog:
         action_frame = ttk.Frame(main_frame)
         action_frame.grid(row=3, column=0, columnspan=2, pady=(10, 0), sticky=(tk.W, tk.E))
         action_frame.columnconfigure(1, weight=1)
-        
+
+        # Download Report button
+        download_btn = ttk.Button(
+            action_frame,
+            text="⬇️ Download Report",
+            command=self._download_report,
+            width=25
+        )
+        download_btn.grid(row=0, column=1, padx=(0, 0))
+
         # Buttons
         cancel_btn = ttk.Button(
             action_frame, 
@@ -191,6 +200,62 @@ class ValidationDialog:
             self.justification = justification
             self.root.destroy()
         # If no justification provided, stay in the dialog
+
+    def _download_report(self):
+        """Open a file dialog to save the full validation report."""
+        import tkinter.filedialog
+        import subprocess
+        from datetime import datetime
+        # Try to get git info
+        try:
+            commit_id = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            commit_id = "(unknown)"
+        try:
+            branch = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            branch = "(unknown)"
+        try:
+            user_name = subprocess.run(['git', 'config', 'user.name'], capture_output=True, text=True, check=True).stdout.strip()
+            user_email = subprocess.run(['git', 'config', 'user.email'], capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            user_name = "(unknown)"
+            user_email = "(unknown)"
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Ask user for file location
+        default_filename = f"apigenie_validation_{commit_id[:7]}_{timestamp}.txt"
+        file_path = tkinter.filedialog.asksaveasfilename(
+            title="Save Validation Report",
+            defaultextension=".txt",
+            initialfile=default_filename,
+            filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
+        )
+        if not file_path:
+            return  # User cancelled
+        # Compose report
+        justification = getattr(self, 'justification', "(not provided)")
+        errors = self.validation_results.get('errors', [])
+        warnings = self.validation_results.get('warnings', [])
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write("Validation Override Record\n")
+            f.write("========================\n\n")
+            f.write(f"Commit: {commit_id}\n")
+            f.write(f"Branch: {branch}\n")
+            f.write(f"GitHub User: {user_name} <{user_email}>\n")
+            f.write(f"Timestamp: {timestamp}\n\n")
+            f.write(f"JUSTIFICATION: {justification}\n\n")
+            if errors:
+                f.write(f"VALIDATION ERRORS ({len(errors)}):\n")
+                for error in errors:
+                    f.write(f"  - {error}\n")
+                f.write("\n")
+            if warnings:
+                f.write(f"VALIDATION WARNINGS ({len(warnings)}):\n")
+                for warning in warnings:
+                    f.write(f"  - {warning}\n")
+                f.write("\n")
+            f.write("========================\n")
+        tk.messagebox.showinfo("Report Saved", f"Validation report saved to:\n{file_path}")
 
 
 class JustificationDialog:
