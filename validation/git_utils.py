@@ -82,6 +82,7 @@ class GitUtils:
         Includes commit id, branch, and GitHub user.
         """
         commit_id = self.get_last_commit_hash()
+        short_commit_id = commit_id[:7] if commit_id else "unknown"
         branch = self.get_current_branch() or "(unknown)"
         # Get GitHub user from git config
         try:
@@ -91,7 +92,7 @@ class GitUtils:
             user_name = "(unknown)"
             user_email = "(unknown)"
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f".apigenie_validation_{commit_id}_{timestamp}.txt"
+        filename = f".apigenie_validation_{short_commit_id}_{timestamp}.txt"
         file_path = os.path.join(self.repo_path, filename)
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write("Validation Override Record\n")
