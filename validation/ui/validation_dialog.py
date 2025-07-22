@@ -100,15 +100,6 @@ class ValidationDialog:
         action_frame.grid(row=3, column=0, columnspan=2, pady=(10, 0), sticky=(tk.W, tk.E))
         action_frame.columnconfigure(1, weight=1)
 
-        # Download Report button
-        download_btn = ttk.Button(
-            action_frame,
-            text="⬇️ Download Report",
-            command=self._download_report,
-            width=25
-        )
-        download_btn.grid(row=0, column=1, padx=(0, 0))
-
         # Buttons
         cancel_btn = ttk.Button(
             action_frame, 
@@ -117,15 +108,23 @@ class ValidationDialog:
             width=25
         )
         cancel_btn.grid(row=0, column=0, padx=(0, 10))
-        
+
         proceed_btn = ttk.Button(
             action_frame, 
             text="⚠️ Proceed Despite Failures", 
             command=self._proceed_with_justification,
             width=25
         )
-        proceed_btn.grid(row=0, column=2, padx=(10, 0))
-        
+        proceed_btn.grid(row=0, column=1, padx=(10, 0))
+
+        proceed_download_btn = ttk.Button(
+            action_frame,
+            text="⚠️ Proceed & Download Report",
+            command=self._proceed_with_justification_and_download,
+            width=28
+        )
+        proceed_download_btn.grid(row=0, column=2, padx=(10, 0))
+
         # Make cancel the default focus
         cancel_btn.focus()
         
@@ -193,23 +192,33 @@ class ValidationDialog:
         self.root.destroy()
     
     def _proceed_with_justification(self):
-        """Handle proceed with justification action."""
+        """Handle proceed with justification action (no download)."""
         justification_dialog = JustificationDialog(self.root)
         justification = justification_dialog.get_justification()
-        
         if justification:
             self.result = 'proceed'
             self.justification = justification
             self.root.destroy()
         # If no justification provided, stay in the dialog
 
-    def _download_report(self):
+    def _proceed_with_justification_and_download(self):
+        """Handle proceed with justification and download report action."""
+        justification_dialog = JustificationDialog(self.root)
+        justification = justification_dialog.get_justification()
+        if not justification:
+            return  # Stay in dialog if no justification
+        self.justification = justification
+        self._download_report(force_justification=True)
+        self.result = 'proceed'
+        self.root.destroy()
+
+    def _download_report(self, force_justification=False):
         """Open a file dialog to save the full validation report, always using correct repo and justification."""
         import tkinter.filedialog
         import subprocess
         from datetime import datetime
-        # Prompt for justification if not set
-        if not self.justification:
+        # If called from the old download button, prompt for justification if not set
+        if not self.justification and not force_justification:
             justification_dialog = JustificationDialog(self.root)
             justification = justification_dialog.get_justification()
             if not justification:
