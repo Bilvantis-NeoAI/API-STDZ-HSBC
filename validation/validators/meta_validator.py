@@ -16,7 +16,7 @@ class MetaValidator(BaseValidator):
     # Allowed values for enumeration fields - UPDATED
     ALLOWED_VALUES = {
         'API.layer': ['xAPI', 'sAPI', 'eAPI'],
-        'API.audience': ['internal', 'external'],
+        'API.audience': ['Internal', 'External'],
         'API.version.status': ['develop', 'test', 'prelive', 'live', 'deprecated', 'demised'],
         'API.version.apiStyle': [
             'HYDROGEN', 'DOMAIN_PAPI', 'ORIGINATIONS', 'BANKING 2.0', 
@@ -146,7 +146,7 @@ class MetaValidator(BaseValidator):
             return False
         
         # Simplified pattern that achieves the same goal
-        pattern = r'^[a-z]+(?:-?[a-z0-9]+)*$'
+        pattern = r'^[a-z]+((--|-)[a-z0-9]+)*$'
         if not re.match(pattern, str(asset_name)):
             self.add_error(f"assetName '{asset_name}' does not match required pattern", file_path)
             return False
