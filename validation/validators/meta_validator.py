@@ -53,6 +53,7 @@ class MetaValidator(BaseValidator):
             self._validate_implementation_framework,
             self._validate_architectural_style,
             self._validate_business_models,
+            self._validate_business_models_wpb_cidm,
             self._validate_data_classification,
             self._validate_gbgf,
             self._validate_service_line,
@@ -331,6 +332,27 @@ class MetaValidator(BaseValidator):
         
         return True
     
+    def _validate_business_models_wpb_cidm(self, data: Dict[str, Any], file_path: str) -> bool:
+        """If API.layer is pAPI, businessModels must have at least one with name 'WPB-CIDM'.
+        For sAPI/xAPI, if businessModels exists, all names must be 'WPB-CIDM'."""
+        layer = self._get_nested_value(data, 'API.layer')
+        business_models = self._get_nested_value(data, 'API.version.businessModels')
+        if layer == 'pAPI':
+            if not business_models or not isinstance(business_models, list):
+                self.add_error("API.version.businessModels is required and must be a list when API.layer is 'pAPI' (WPB-CIDM check)", file_path)
+                return False
+            found = any(isinstance(bm, dict) and bm.get('name') == 'WPB-CIDM' for bm in business_models)
+            if not found:
+                self.add_error("API.version.businessModels must contain an object with name 'WPB-CIDM' when API.layer is 'pAPI'", file_path)
+                return False
+        elif layer in ('sAPI', 'xAPI'):
+            if business_models and isinstance(business_models, list):
+                for bm in business_models:
+                    if not (isinstance(bm, dict) and bm.get('name') == 'WPB-CIDM'):
+                        self.add_error("If API.layer is 'sAPI' or 'xAPI', all businessModels names must be 'WPB-CIDM' if present", file_path)
+                        return False
+        return True
+
     def _validate_data_classification(self, data: Dict[str, Any], file_path: str) -> bool:
         """Rule 15: API.version.dataClassification should be one of allowed values"""
         data_classification = self._get_nested_value(data, 'API.version.dataClassification')
