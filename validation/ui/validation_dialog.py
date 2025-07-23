@@ -111,19 +111,11 @@ class ValidationDialog:
 
         proceed_btn = ttk.Button(
             action_frame, 
-            text="⚠️ Proceed Despite Failures", 
-            command=self._proceed_with_justification,
-            width=25
+            text="⚠️ Proceed (Download Required)", 
+            command=self._proceed_with_justification_and_download,
+            width=32
         )
         proceed_btn.grid(row=0, column=1, padx=(10, 0))
-
-        proceed_download_btn = ttk.Button(
-            action_frame,
-            text="⚠️ Proceed & Download Report",
-            command=self._proceed_with_justification_and_download,
-            width=28
-        )
-        proceed_download_btn.grid(row=0, column=2, padx=(10, 0))
 
         # Make cancel the default focus
         cancel_btn.focus()
@@ -192,17 +184,11 @@ class ValidationDialog:
         self.root.destroy()
     
     def _proceed_with_justification(self):
-        """Handle proceed with justification action (no download)."""
-        justification_dialog = JustificationDialog(self.root)
-        justification = justification_dialog.get_justification()
-        if justification:
-            self.result = 'proceed'
-            self.justification = justification
-            self.root.destroy()
-        # If no justification provided, stay in the dialog
+        """(Removed: now handled by _proceed_with_justification_and_download)"""
+        pass
 
     def _proceed_with_justification_and_download(self):
-        """Handle proceed with justification and download report action."""
+        """Handle proceed: prompt for justification, then download report, then proceed."""
         justification_dialog = JustificationDialog(self.root)
         justification = justification_dialog.get_justification()
         if not justification:
