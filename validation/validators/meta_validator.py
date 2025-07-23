@@ -308,8 +308,7 @@ class MetaValidator(BaseValidator):
         layer = self._get_nested_value(data, 'API.layer')
         business_models = self._get_nested_value(data, 'API.version.businessModels')
         
-        # Updated: Now checks for xAPI (since pAPI was changed to xAPI)
-        if layer == "xAPI":
+        if layer == "pAPI":
             if business_models is None or (isinstance(business_models, list) and len(business_models) == 0):
                 self.add_error("API.version.businessModels is required when API.layer is 'xAPI'", file_path)
                 return False
