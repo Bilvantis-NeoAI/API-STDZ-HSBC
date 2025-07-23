@@ -15,7 +15,7 @@ class MetaValidator(BaseValidator):
     
     # Allowed values for enumeration fields - UPDATED
     ALLOWED_VALUES = {
-        'API.layer': ['xAPI', 'sAPI', 'eAPI'],
+        'API.layer': ['xAPI', 'sAPI', 'pAPI'],
         'API.audience': ['Internal', 'External'],
         'API.version.status': ['develop', 'test', 'prelive', 'live', 'deprecated', 'demised'],
         'API.version.apiStyle': [

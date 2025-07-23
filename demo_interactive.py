@@ -17,7 +17,7 @@ def main():
     validation_results = {
         'errors': [
             'test_api/api.meta - assetVersion "2.0.0" should start with "1.0.0"',
-            'test_api/api.meta - API.layer "pAPI" is not in allowed values ["xAPI", "sAPI", "eAPI"]',
+            'test_api/api.meta - API.layer "pAPI" is not in allowed values ["xAPI", "sAPI", "pAPI"]',
             'test_api/api.meta - API.audience "partner" is not in allowed values ["internal", "external"]',
             'test_api/v2/api.meta - API.version.status "staging" is not in allowed values',
             'test_api/v2/api.meta - GBGF "INVALID_GBGF" is not in allowed values'
