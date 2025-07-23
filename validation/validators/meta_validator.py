@@ -310,7 +310,7 @@ class MetaValidator(BaseValidator):
         
         if layer == "pAPI":
             if business_models is None or (isinstance(business_models, list) and len(business_models) == 0):
-                self.add_error("API.version.businessModels is required when API.layer is 'xAPI'", file_path)
+                self.add_error("API.version.businessModels is required when API.layer is 'pAPI'", file_path)
                 return False
         
         return True
