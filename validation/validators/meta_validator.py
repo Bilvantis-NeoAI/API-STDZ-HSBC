@@ -24,6 +24,9 @@ class MetaValidator(BaseValidator):
         ],
         'API.version.architecturalStyle': ['REST', 'GRAPHQL', 'SOAP', 'RPC'],
         'API.version.dataClassification': ['public', 'internal', 'confidential', 'restricted', 'secret'],
+        'API.version.implementationFramework': [
+            'CARBON', 'SPRING_BOOT', 'SILVER', 'SILVER_1S', 'NODE JS', 'DOMAIN_PAPI', 'MULESOFT', 'OTHER'
+        ],
         'API.contract.GBGF': [
             'CMB', 'Central-Architecture', 'Corporate-Functions', 'Group-Data', 'FCR', 'GBM', 'GPB',
             'Cyber-Security', 'ITID', 'OSS', 'Payments', 'RBWM', 'HBFR', 'Risk', 'DAO', 'WSIT',
@@ -47,6 +50,7 @@ class MetaValidator(BaseValidator):
             self._validate_status,
             self._validate_private_api,
             self._validate_api_style,
+            self._validate_implementation_framework,
             self._validate_architectural_style,
             self._validate_business_models,
             self._validate_data_classification,
@@ -289,6 +293,18 @@ class MetaValidator(BaseValidator):
         
         return True
     
+    def _validate_implementation_framework(self, data: Dict[str, Any], file_path: str) -> bool:
+        """Validate API.version.implementationFramework for allowed values."""
+        impl_framework = self._get_nested_value(data, 'API.version.implementationFramework')
+        allowed = self.ALLOWED_VALUES['API.version.implementationFramework']
+        if impl_framework is None or impl_framework == '':
+            self.add_error('wpb-implementationFramework-missing', file_path)
+            return False
+        if impl_framework not in allowed:
+            self.add_error(f"wpb-implementationFramework-unrecognised: '{impl_framework}' not in {allowed}", file_path)
+            return False
+        return True
+
     def _validate_architectural_style(self, data: Dict[str, Any], file_path: str) -> bool:
         """Rule 13: API.version.architecturalStyle should be one of allowed values"""
         arch_style = self._get_nested_value(data, 'API.version.architecturalStyle')
