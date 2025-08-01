@@ -217,9 +217,10 @@ Categories=Utility;Development;
 
     def check_first_run(self):
         """Check if this is the first time the application is run using comprehensive detection."""
-        apigenie_dir = os.path.expanduser('~/.apigenie')
+        apigenie_dir = os.path.expanduser('~/.genie')
         hooks_dir = os.path.join(apigenie_dir, 'hooks')
-        config_file = os.path.join(apigenie_dir, 'config')
+        validation_dir = os.path.join(apigenie_dir, 'validation')
+        config_file = os.path.join(validation_dir, 'config')
         
         # Start with assumption it's first run
         self.is_first_run = True
@@ -252,7 +253,6 @@ Categories=Utility;Development;
                                                 capture_output=True, text=True, check=False)
                 if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip() == hooks_dir:
                     # Validation directory should also exist for complete installation
-                    validation_dir = os.path.join(apigenie_dir, 'validation')
                     if os.path.exists(validation_dir):
                         self.is_first_run = False
             except:
@@ -267,10 +267,10 @@ Categories=Utility;Development;
 
     def get_installation_status(self):
         """Get detailed installation status information."""
-        apigenie_dir = os.path.expanduser('~/.apigenie')
+        apigenie_dir = os.path.expanduser('~/.genie')
         hooks_dir = os.path.join(apigenie_dir, 'hooks')
         validation_dir = os.path.join(apigenie_dir, 'validation')
-        config_file = os.path.join(apigenie_dir, 'config')
+        config_file = os.path.join(validation_dir, 'config')
         
         status = {
             'installed': False,
@@ -278,6 +278,7 @@ Categories=Utility;Development;
             'hooks_exist': False,
             'validation_exists': False,
             'git_configured': False,
+            'alias_configured': False,
             'details': []
         }
         
@@ -325,10 +326,28 @@ Categories=Utility;Development;
                 if configured_path == hooks_dir:
                     status['git_configured'] = True
                     status['details'].append("✓ Git hooks path correctly configured")
-            else:
+                else:
                     status['details'].append(f"⚠ Git hooks path set to different location: {configured_path}")
+            else:
+                status['details'].append("✗ Git hooks path not configured")
         except:
             status['details'].append("✗ Unable to check Git configuration")
+        
+        # Check api-guard alias configuration
+        try:
+            alias_result = run_subprocess(['git', 'config', '--global', '--get', 'alias.api-guard'],
+                                        capture_output=True, text=True, check=False)
+            if alias_result.returncode == 0:
+                alias_value = alias_result.stdout.strip()
+                if alias_value.startswith('!'):
+                    status['alias_configured'] = True
+                    status['details'].append("✓ api-guard git alias configured")
+                else:
+                    status['details'].append("⚠ api-guard alias exists but not properly configured")
+            else:
+                status['details'].append("✗ api-guard git alias not configured")
+        except:
+            status['details'].append("✗ Unable to check api-guard alias configuration")
         
         # Determine overall installation status
         status['installed'] = (status['config_exists'] or status['hooks_exist']) and status['validation_exists']
@@ -353,11 +372,12 @@ Categories=Utility;Development;
                 
             # Get the user's home directory
             home_dir = os.path.expanduser('~')
-            apigenie_dir = os.path.join(home_dir, '.apigenie')
+            apigenie_dir = os.path.join(home_dir, '.genie')
             hooks_dir = os.path.join(apigenie_dir, 'hooks')
+            validation_dir = os.path.join(apigenie_dir, 'validation')
             
             # Check if hooks are already installed
-            config_file = os.path.join(apigenie_dir, 'config')
+            config_file = os.path.join(validation_dir, 'config')
             is_already_installed = False
             
             if os.path.exists(config_file):
@@ -370,15 +390,15 @@ Categories=Utility;Development;
                     pass
             
             # Also check if hooks directory exists and has files
-            if not is_already_installed and os.path.exists(hooks_dir) and os.listdir(hooks_dir):
-                is_already_installed = True
+            # if not is_already_installed and os.path.exists(hooks_dir) and os.listdir(hooks_dir):
+            #     is_already_installed = True
             
-            # Also check if Git hooks path is set to our directory
-            if not is_already_installed:
-                hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
-                                                capture_output=True, text=True, check=False)
-                if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip() == hooks_dir:
-                    is_already_installed = True
+            # # Also check if Git hooks path is set to our directory
+            # if not is_already_installed:
+            #     hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
+            #                                     capture_output=True, text=True, check=False)
+            #     if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip() == hooks_dir:
+            #         is_already_installed = True
             
             if is_already_installed:
                 QMessageBox.information(self, "Already Installed", 
@@ -388,7 +408,6 @@ Categories=Utility;Development;
             
             # Create necessary directories
             os.makedirs(hooks_dir, exist_ok=True)
-            validation_dir = os.path.join(apigenie_dir, 'validation')
             os.makedirs(validation_dir, exist_ok=True)
             
             # Get the correct source directories
@@ -425,11 +444,24 @@ Categories=Utility;Development;
                 # Set up new Git hooks configuration
                 run_subprocess(['git', 'config', '--global', 'core.hooksPath', hooks_dir], check=True)
                 
+                # Register api-guard git alias
+                api_guard_script = os.path.join(hooks_dir, 'api-guard')
+                if os.path.exists(api_guard_script):
+                    # Make the script executable
+                    os.chmod(api_guard_script, 0o755)
+                    
+                    # Register the git alias
+                    run_subprocess(['git', 'config', '--global', 'alias.api-guard', f'!{api_guard_script}'], check=True)
+                    print(f"Registered git alias 'api-guard' -> {api_guard_script}")
+                else:
+                    print(f"Warning: api-guard.sh script not found at {api_guard_script}")
+                
                 # Create a config file to store installation status
-                config_file = os.path.join(apigenie_dir, 'config')
+                config_file = os.path.join(validation_dir, 'config')
                 with open(config_file, 'w') as f:
                     f.write(f'hooks_dir={hooks_dir}\n')
                     f.write('installed=true\n')
+                    f.write(f'api_guard_alias=api-guard\n')
                 
                 # Handle successful installation
                 self.is_first_run = False
@@ -465,21 +497,24 @@ Categories=Utility;Development;
                 return
                 
             # Remove Git configurations
-            run_subprocess(['git', 'config', '--global', '--unset', 'core.hooksPath'], check=False)
+            # run_subprocess(['git', 'config', '--global', '--unset', 'core.hooksPath'], check=False)
             
-            # Remove .apigenie directory completely
-            apigenie_dir = os.path.expanduser('~/.apigenie')
-            if os.path.exists(apigenie_dir):
-                shutil.rmtree(apigenie_dir)
+            # Remove api-guard git alias
+            run_subprocess(['git', 'config', '--global', '--unset', 'alias.api-guard'], check=False)
+            
+            # Remove .genie directory completely
+            validation_dir = os.path.expanduser('~/.genie/validation')
+            if os.path.exists(validation_dir):
+                shutil.rmtree(validation_dir)
             
             # Verify uninstallation
-            if os.path.exists(apigenie_dir):
-                raise Exception("Failed to remove .apigenie directory")
+            if os.path.exists(validation_dir):
+                raise Exception("Failed to remove .genie directory")
                 
-            hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
-                                            capture_output=True, text=True, check=False)
-            if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip():
-                raise Exception("Git hooks path still set")
+            # hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
+            #                                 capture_output=True, text=True, check=False)
+            # if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip():
+            #     raise Exception("Git hooks path still set")
                 
             # Handle success
             self.is_first_run = True
@@ -705,7 +740,7 @@ Categories=Utility;Development;
             status = self.get_installation_status()
             
             if status['installed']:
-                if status['config_exists'] and status['hooks_exist'] and status['validation_exists'] and status['git_configured']:
+                if status['config_exists'] and status['hooks_exist'] and status['validation_exists'] and status['git_configured'] and status['alias_configured']:
                     self.status_label.setText("✓ Installation complete and fully configured")
                     self.status_label.setStyleSheet("color: green; font-style: italic; font-size: 12px;")
                 else:
@@ -732,7 +767,7 @@ Categories=Utility;Development;
             details_text += f"  {detail}\n"
         
         # Add installation directory info
-        apigenie_dir = os.path.expanduser('~/.apigenie')
+        apigenie_dir = os.path.expanduser('~/.genie')
         details_text += f"\nInstallation Directory: {apigenie_dir}\n"
         
         # Show in message box
@@ -799,10 +834,10 @@ def install_hooks_cli():
             return False
         
         # Check if already installed using comprehensive detection
-        apigenie_dir = os.path.expanduser('~/.apigenie')
+        apigenie_dir = os.path.expanduser('~/.genie')
         hooks_dir = os.path.join(apigenie_dir, 'hooks')
         validation_dir = os.path.join(apigenie_dir, 'validation')
-        config_file = os.path.join(apigenie_dir, 'config')
+        config_file = os.path.join(validation_dir, 'config')
         
         # Check config file
         config_installed = False
@@ -834,6 +869,18 @@ def install_hooks_cli():
         except:
             pass
         
+        # Check api-guard alias configuration
+        alias_configured = False
+        try:
+            alias_result = run_subprocess(['git', 'config', '--global', '--get', 'alias.api-guard'],
+                                        capture_output=True, text=True, check=False)
+            if alias_result.returncode == 0:
+                alias_value = alias_result.stdout.strip()
+                if alias_value.startswith('!'):
+                    alias_configured = True
+        except:
+            pass
+        
         # Determine if installed
         is_installed = (config_installed or hooks_installed) and validation_installed
         
@@ -847,6 +894,8 @@ def install_hooks_cli():
                 print("  Warning: Validation system missing")
             if not git_configured:
                 print("  Warning: Git hooks path not configured correctly")
+            if not alias_configured:
+                print("  Warning: api-guard git alias not configured")
             return True
         
         # Create directories
@@ -874,9 +923,22 @@ def install_hooks_cli():
         print("Configuring Git...")
         run_subprocess(['git', 'config', '--global', 'core.hooksPath', hooks_dir], check=True)
         
+        # Register api-guard git alias
+        api_guard_script = os.path.join(hooks_dir, 'api-guard')
+        if os.path.exists(api_guard_script):
+            # Make the script executable
+            os.chmod(api_guard_script, 0o755)
+            
+            # Register the git alias
+            run_subprocess(['git', 'config', '--global', 'alias.api-guard', f'!{api_guard_script}'], check=True)
+            print(f"Registered git alias 'api-guard' -> {api_guard_script}")
+        else:
+            print(f"Warning: api-guard.sh script not found at {api_guard_script}")
+        
         # Mark as installed
         with open(config_file, 'w') as f:
             f.write('installed=true\n')
+            f.write(f'api_guard_alias=api-guard\n')
         
         print("✓ APIGenie hooks installed successfully!")
         print("\nAPIGenie is now monitoring your Git commits for API compliance.")
@@ -892,13 +954,16 @@ def uninstall_hooks_cli():
         print("Uninstalling APIGenie hooks...")
         
         # Remove Git configuration
-        run_subprocess(['git', 'config', '--global', '--unset', 'core.hooksPath'], check=False)
+        #run_subprocess(['git', 'config', '--global', '--unset', 'core.hooksPath'], check=False)
         
-        # Remove .apigenie directory
-        apigenie_dir = os.path.expanduser('~/.apigenie')
+        # Remove api-guard git alias
+        run_subprocess(['git', 'config', '--global', '--unset', 'alias.api-guard'], check=False)
+        
+        # Remove .genie directory
+        apigenie_dir = os.path.expanduser('~/.genie')
         if os.path.exists(apigenie_dir):
             shutil.rmtree(apigenie_dir)
-            print("Removed .apigenie directory")
+            print("Removed .genie directory")
         
         print("✓ APIGenie hooks uninstalled successfully!")
         return True
