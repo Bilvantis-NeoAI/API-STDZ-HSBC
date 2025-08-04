@@ -239,7 +239,7 @@ Categories=Utility;Development;
         if self.is_first_run and os.path.exists(hooks_dir) and os.listdir(hooks_dir):
             try:
                 # Check if essential hook files exist
-                essential_hooks = ['pre-commit', 'pre-push']
+                essential_hooks = ['pre-push']
                 hooks_exist = all(os.path.exists(os.path.join(hooks_dir, hook)) for hook in essential_hooks)
                 if hooks_exist:
                     self.is_first_run = False
@@ -298,7 +298,7 @@ Categories=Utility;Development;
         
         # Check hooks directory
         if os.path.exists(hooks_dir):
-            essential_hooks = ['pre-commit', 'pre-push']
+            essential_hooks = ['pre-push']
             existing_hooks = [h for h in essential_hooks if os.path.exists(os.path.join(hooks_dir, h))]
             if len(existing_hooks) == len(essential_hooks):
                 status['hooks_exist'] = True
@@ -430,7 +430,7 @@ Categories=Utility;Development;
                 else:
                     shutil.copy2(str(source_file), str(target_file))
                     # Make hook files executable
-                    if item in ['pre-commit', 'pre-push', 'commit-msg']:
+                    if item in ['pre-push', 'commit-msg']:
                         os.chmod(str(target_file), 0o755)
             
             # Copy validation directory
@@ -853,7 +853,7 @@ def install_hooks_cli():
         # Check hooks exist
         hooks_installed = False
         if os.path.exists(hooks_dir):
-            essential_hooks = ['pre-commit', 'pre-push']
+            essential_hooks = [ 'pre-push']
             hooks_installed = all(os.path.exists(os.path.join(hooks_dir, hook)) for hook in essential_hooks)
         
         # Check validation system
@@ -913,7 +913,7 @@ def install_hooks_cli():
                 shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
             else:
                 shutil.copy2(src_path, dst_path)
-                if item in ['pre-commit', 'pre-push', 'commit-msg']:
+                if item in ['pre-push', 'commit-msg']:
                     os.chmod(dst_path, 0o755)
         
         print(f"Copying validation from {validation_source} to {validation_dir}...")
@@ -961,9 +961,10 @@ def uninstall_hooks_cli():
         
         # Remove .genie directory
         apigenie_dir = os.path.expanduser('~/.genie')
-        if os.path.exists(apigenie_dir):
-            shutil.rmtree(apigenie_dir)
-            print("Removed .genie directory")
+        validation_dir = os.path.join(apigenie_dir, 'validation')
+        if os.path.exists(validation_dir):
+            shutil.rmtree(validation_dir)
+            print("Removed validation directory")
         
         print("✓ APIGenie hooks uninstalled successfully!")
         return True
