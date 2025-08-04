@@ -235,28 +235,28 @@ Categories=Utility;Development;
             except:
                 pass
         
-        # Check 2: Hooks directory exists and has files (backup detection)
-        if self.is_first_run and os.path.exists(hooks_dir) and os.listdir(hooks_dir):
-            try:
-                # Check if essential hook files exist
-                essential_hooks = ['pre-push']
-                hooks_exist = all(os.path.exists(os.path.join(hooks_dir, hook)) for hook in essential_hooks)
-                if hooks_exist:
-                    self.is_first_run = False
-            except:
-                pass
+        # # Check 2: Hooks directory exists and has files (backup detection)
+        # if self.is_first_run and os.path.exists(hooks_dir) and os.listdir(hooks_dir):
+        #     try:
+        #         # Check if essential hook files exist
+        #         essential_hooks = ['pre-push']
+        #         hooks_exist = all(os.path.exists(os.path.join(hooks_dir, hook)) for hook in essential_hooks)
+        #         if hooks_exist:
+        #             self.is_first_run = False
+        #     except:
+        #         pass
         
-        # Check 3: Git hooks path is set to our directory (backup detection)
-        if self.is_first_run:
-            try:
-                hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
-                                                capture_output=True, text=True, check=False)
-                if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip() == hooks_dir:
-                    # Validation directory should also exist for complete installation
-                    if os.path.exists(validation_dir):
-                        self.is_first_run = False
-            except:
-                pass
+        # # Check 3: Git hooks path is set to our directory (backup detection)
+        # if self.is_first_run:
+        #     try:
+        #         hooks_path_result = run_subprocess(['git', 'config', '--global', '--get', 'core.hooksPath'],
+        #                                         capture_output=True, text=True, check=False)
+        #         if hooks_path_result.returncode == 0 and hooks_path_result.stdout.strip() == hooks_dir:
+        #             # Validation directory should also exist for complete installation
+        #             if os.path.exists(validation_dir):
+        #                 self.is_first_run = False
+        #     except:
+        #         pass
         
         # Create config directory if it doesn't exist (for future installation)
         if not os.path.exists(apigenie_dir):
