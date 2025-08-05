@@ -444,17 +444,26 @@ Categories=Utility;Development;
                 # Set up new Git hooks configuration
                 run_subprocess(['git', 'config', '--global', 'core.hooksPath', hooks_dir], check=True)
                 
-                # Register api-guard git alias
-                api_guard_script = os.path.join(hooks_dir, 'api-guard')
-                if os.path.exists(api_guard_script):
-                    # Make the script executable
-                    os.chmod(api_guard_script, 0o755)
-                    
-                    # Register the git alias
-                    run_subprocess(['git', 'config', '--global', 'alias.api-guard', f'!{api_guard_script}'], check=True)
-                    print(f"Registered git alias 'api-guard' -> {api_guard_script}")
+                # Register api-guard git alias with verification
+                api_guard_path = os.path.join(hooks_dir, 'api-guard')
+                if os.path.exists(api_guard_path):
+                    os.chmod(api_guard_path, 0o755)
+                    alias_cmd = f'!bash "{api_guard_path}"'
+                    try:
+                        run_subprocess(['git', 'config', '--global', 'alias.api-guard', alias_cmd], check=True)
+
+                        # Verify the alias was set correctly
+                        result = run_subprocess(['git', 'config', '--global', '--get', 'alias.api-guard'],
+                                                capture_output=True, text=True, check=True)
+                        if result.stdout.strip() == alias_cmd:
+                            logging.info("api-guard alias verified successfully")
+                        else:
+                            logging.warning(f"api-guard alias verification failed. Expected: {alias_cmd}, Got: {result.stdout.strip()}")
+                    except subprocess.CalledProcessError as e:
+                        logging.error(f"Failed to set api-guard alias: {e}")
                 else:
-                    print(f"Warning: api-guard.sh script not found at {api_guard_script}")
+                    print(f"Warning: api-guard script not found at {api_guard_path}")
+
                 
                 # Create a config file to store installation status
                 config_file = os.path.join(validation_dir, 'config')
